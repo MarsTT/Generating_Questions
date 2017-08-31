@@ -78,6 +78,7 @@ def choose_predicate(predDict, file_path):
 	cur = db.cursor()
 
 	predicate_sentence = []
+	original_subject = []
 	for line in lines:
 		tmp_pred = line.split('\t')[1]
 		if tmp_pred == 'www.freebase.com/common/topic/notable_types':
@@ -85,7 +86,7 @@ def choose_predicate(predDict, file_path):
 		#print tmp_pred
 		if tmp_pred in pre2sen.keys():
 			#print "Got ONE!"
-			'''
+			
 			columns = line.split('\t')[0].split('/')
 			mid = columns[1] + '.' + columns[2]
 			mid = "<http://rdf.freebase.com/ns/" + str(mid) + ">"
@@ -104,16 +105,21 @@ def choose_predicate(predDict, file_path):
 			index = origin_entity.find('@')
 			origin_entity = origin_entity[0:index].replace("\"","")
 			origin_entity_lower = origin_entity.lower()
-			print origin_entity
-			'''
+			#print origin_entity
+			
 			pre2sen[tmp_pred].append(line.split('\t')[-1])
 			#predicate_sentence.append(line.split('\t')[-1].replace(origin_entity,"").replace(origin_entity_lower,""))
 			predicate_sentence.append(line.split('\t')[-1])
+
+			# list of original subject which convert to 100[0] when converting
+			original_subject.append(origin_entity)
 	#print len(pre2sen)
 	
+	print original_subject
 	
 
 	predicate_vectors = []
+	pre_no = 0 
 	for p in predicate_sentence:
 		splits = p.split()
 		i = 0
@@ -124,13 +130,18 @@ def choose_predicate(predDict, file_path):
 			tmp_vector = model[splits[i]]
 			for j in range(i + 1, len(splits)-1):
 				if splits[j] in model.wv.vocab:
-					tmp_vector += model[splits[j]]
+					if splits[j] != original_subject[pre_no]:
+						tmp_vector += model[splits[j]]
+					else:
+						print splits[j]
 		else:
 			tmp_vector = 2 * np.random.random(size=100) - 1
 			#print "None of the words in the sentence exits in the vocab"
 			continue
 
 		predicate_vectors.append(tmp_vector)
+
+		pre_no += 1
 
 
 	print "predicate_vectors:",len(predicate_vectors)
