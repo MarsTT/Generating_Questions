@@ -130,7 +130,7 @@ def choose_predicate(predDict, file_path):
 			tmp_vector = model[splits[i]]
 			for j in range(i + 1, len(splits)-1):
 				if splits[j] in model.wv.vocab:
-					if splits[j] != original_subject[pre_no]:
+					if splits[j].lower() != original_subject[pre_no].lower() :
 						tmp_vector += model[splits[j]]
 					else:
 						print splits[j]
@@ -156,13 +156,15 @@ def choose_predicate(predDict, file_path):
 	i = 0
 	while splits[i] not in model.wv.vocab and i < len(splits)-1:
 		i += 1
-
+	
 	vector = model[splits[i]]
 	for s in splits[i+1:]:
 		if s in model.wv.vocab:
 			vector += model[s]
-
-
+	'''
+	vector = model.docvecs[' '.join(splits)]
+	print vector
+	'''
 	vector = vector.astype(float)
 	min_dis = float("inf")
 	count = 0

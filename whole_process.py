@@ -104,9 +104,20 @@ def generate_question(f_result, tmp_mid, file_path):
 	pure_predDict = []
 	for p in predDict:
 		pure_predDict.append(p[0].replace("('<http://rdf.freebase.com/","").replace(">',)",""))
+
+	'''
+	# using dict to choose predicate
+	predicate_no = len(predDict) - int(math.log(len(predDict), 2) ** 2)
+	predicate = predDict[predicate_no][0].replace("('","").replace("',)","")
+	print "select * from `freebase-onlymid_-_datadump` where `row_id` between '{0}' and '{1}' where `<predicate>` = '{2}';".format(min_row_id,max_row_id,predicate)
+	cur.execute("select * from `freebase-onlymid_-_datadump` where `row_id` between '{0}' and '{1}' and `<predicate>` = '{2}';".format(min_row_id,max_row_id,predicate))
+	rows = cur.fetchall()
+	#print rows
+	'''
+	
+	# using word2vec choose predicate
 	predicate = word2vec.choose_predicate(pure_predDict, file_path)
-	#print pure_predDict
-	#print predDict
+
 
 	predicate_1 = "<http://rdf.freebase.com/ns/" + predicate + ">"
 	predicate_2 = "<http://rdf.freebase.com/key/" + predicate + ">"
@@ -126,6 +137,8 @@ def generate_question(f_result, tmp_mid, file_path):
 	print len(rows)
 	#print rows
 
+	
+
 	# origin codes start from here 
 	# choose the first line as the single fact 
 	fact = str(rows[0])
@@ -135,9 +148,14 @@ def generate_question(f_result, tmp_mid, file_path):
 	# get the predicate
 	pre_splits = predicate.strip().split('/')
 	pre_relation = pre_splits[-1][:-1].replace('.','/')
-	predicate = 'www.freebase.com/' + pre_relation
-	#print predicate
 
+	# for word2vec choose
+	#predicate = 'www.freebase.com/' + pre_relation
+	
+	# for dict choose
+	predicate = 'www.freebase.com/' + pre_relation.replace('ns/','').replace('key/', '')
+
+	print predicate
 	# get the subject entity
 	cur.execute("select `min_row_id`, `max_row_id` from `freebase-onlymid_-_fb-id2row-id` where `freebase_id` = '{0}';".format(subject))
 	rows = cur.fetchall()
@@ -251,9 +269,10 @@ files = [ f for f in listdir(separate_dir) if not isfile(join(separate_dir, f))]
 articles_path = []
 for f in files:
 	articles_path.append(separate_dir + f + '/' + f)
-print files[0]
-tmp_file = files[0]
-file_path = articles_path[0]
+choice_no = 100
+print files[choice_no]
+tmp_file = files[choice_no]
+file_path = articles_path[choice_no]
 g = gt.load_graph(file_path + ".gt")
 original_edges = g.get_edges()
 extracted_entites = []
