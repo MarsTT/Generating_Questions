@@ -14,6 +14,12 @@ import word2vec
 
 top5_mids = []
 
+# build the dicts of edge
+onehop2extracted = {}
+extracted2onehop = {}
+onehop_label2mid = {}
+extracted_label2mid = {}
+
 predCounts = np.load('FullpredCounts.npy').item()
 db = MySQLdb.connect(host="image.eecs.yorku.ca",    # your host, usually localhost
                      port=3306,
@@ -21,6 +27,66 @@ db = MySQLdb.connect(host="image.eecs.yorku.ca",    # your host, usually localho
                      passwd="P@ssw0rd",  # your password
                      db="freebase_mysql_db")        # name of the data base
 cur = db.cursor()
+
+def get_subject_entity(subject_mid):
+	# get the subject entity
+	cur.execute("select `min_row_id`, `max_row_id` from `freebase-onlymid_-_fb-id2row-id` where `freebase_id` = '{0}';".format(subject_mid))
+	rows = cur.fetchall()
+	min_row_id = rows[0][0]
+	max_row_id = rows[0][1]
+	cur.execute("select `<object>` from `freebase-onlymid_-_datadump` where `<predicate>`='<http://rdf.freebase.com/ns/type.object.name>' and `row_id` between '{0}' and '{1}';".format(min_row_id, max_row_id))
+	rows = cur.fetchall()
+
+	for d in rows:
+		if "@en" in d[0]:
+			subject_entity = d[0].strip()
+	index = subject_entity.find('@')
+	subject_entity = subject_entity[0:index].replace("\"","")
+	return subject_entity
+
+# function try to use <subject, object> to find the fact, subject in the onehop entities and object in the extracted entities
+def su_ob_fact(f_result, tmp_mid, l2v):
+	print "This is function su_ob_fact:"
+	print l2v[tmp_mid]
+	print onehop2extracted[l2v[tmp_mid]]
+	subject_mid = "<http://rdf.freebase.com/ns/" + tmp_mid + ">"
+	for o in onehop2extracted[l2v[tmp_mid]]:
+		object_mid = "<http://rdf.freebase.com/ns/" + l2v.keys()[l2v.values().index(o)] + ">"
+		cur.execute("select `min_row_id`, `max_row_id` from `freebase-onlymid_-_fb-id2row-id` where `freebase_id` = '{0}';".format(subject_mid))
+		rows = cur.fetchall()
+		min_row_id = rows[0][0]
+		max_row_id = rows[0][1]
+		cur.execute("select * from `freebase-onlymid_-_datadump` where `row_id` between '{0}' and '{1}' and `<object>` = '{2}';".format(min_row_id, max_row_id, object_mid))
+		rows = cur.fetchall()
+		if len(rows) > 0:
+			print rows
+			subject_entity = get_subject_entity(subject_mid)
+			predicate = rows[0][1]
+			predicate = predicate.replace("<http://rdf.freebase.com/ns/", "").replace(">","").replace(".","/")
+			predicate = "www.freebase.com/" + predicate
+			current = open('/home/kevinj22/lydia/SimpleQuestions_v2/annotated_fb_data_train.txt','r')
+			while 1:
+				line = current.readline()
+				if line == "":
+					break
+				line = line[:-1]
+				splits = line.split('\t')
+				origin_predicate = splits[1].strip()
+				if predicate == origin_predicate:
+					f_result.write("\n\n\nSubject entity is :")
+					f_result.write(subject_entity)
+					f_result.write('\n')
+					f_result.write(tmp_mid)
+					f_result.write('\n')
+
+					f_result.write("\n\nThe fact and sentence from the SimpleQuestion which matches the fact we found:\n")
+					f_result.write(line)
+					replace(f_result, splits, subject_entity)
+					break
+			return 1
+
+	return 0
+	
 
 
 
@@ -44,7 +110,7 @@ def replace(f_result, splits, subject_entity):
 	for d in rows:
 		if "@en" in d[0]:
 			origin_entity = d[0].strip()
-	#origin_entity = rows[0][0].strip()
+	# origin_entity = rows[0][0].strip()
 	index = origin_entity.find('@')
 	origin_entity = origin_entity[0:index].replace("\"","")
 	origin_entity_lower = origin_entity.lower()
@@ -73,13 +139,18 @@ def replace(f_result, splits, subject_entity):
 	final_sentence = sentence.replace(origin_entity, subject_entity).replace(origin_entity_lower,subject_entity)
 	f_result.write("\nThe generated sentence we got:\n")
 	f_result.write(final_sentence)
+	f_result.write('\n\n')
 
 
 
 
 # function generate_question for generating the questions
 
-def generate_question(f_result, tmp_mid, file_path):
+def generate_question(f_result, tmp_mid, file_path, l2v):
+	
+	if l2v[tmp_mid] in onehop_label2mid.keys():
+		if su_ob_fact(f_result, tmp_mid, l2v) == 1:
+			return
 	subject_mid = "<http://rdf.freebase.com/ns/" + str(tmp_mid) + ">"
 	cur.execute("select `min_row_id`, `max_row_id` from `freebase-onlymid_-_fb-id2row-id` where `freebase_id` = '{0}';".format(subject_mid))
 	rows = cur.fetchall()
@@ -134,7 +205,7 @@ def generate_question(f_result, tmp_mid, file_path):
 	#print "select * from `freebase-onlymid_-_datadump` where `row_id` between '{0}' and '{1}' and `<predicate>` = '{2}';".format(min_row_id,max_row_id,predicate_2)
 	
 	#print "select * from `freebase-onlymid_-_datadump` where `row_id` between '{0}' and '{1}' and `<predicate>` = '{2}';".format(min_row_id,max_row_id,predicate)
-	print len(rows)
+	#print len(rows)
 	#print rows
 
 	
@@ -156,6 +227,8 @@ def generate_question(f_result, tmp_mid, file_path):
 	predicate = 'www.freebase.com/' + pre_relation.replace('ns/','').replace('key/', '')
 
 	print predicate
+
+	'''
 	# get the subject entity
 	cur.execute("select `min_row_id`, `max_row_id` from `freebase-onlymid_-_fb-id2row-id` where `freebase_id` = '{0}';".format(subject))
 	rows = cur.fetchall()
@@ -169,7 +242,9 @@ def generate_question(f_result, tmp_mid, file_path):
 			subject_entity = d[0].strip()
 	index = subject_entity.find('@')
 	subject_entity = subject_entity[0:index].replace("\"","")
+	'''
 
+	subject_entity = get_subject_entity(subject_mid)
 
 
 	# get the origin entity
@@ -205,7 +280,7 @@ def generate_question(f_result, tmp_mid, file_path):
 
 
 # choose top5 entities based on the centrality
-def top5_choose(f_result, centrals, file_path):
+def top5_choose(f_result, centrals, file_path, l2v):
 	top5_labels = [0,0,0,0,0]
 	top5_mids = []
 	top5_values = [0.0,0.0,0.0,0.0,0.0]
@@ -231,143 +306,42 @@ def top5_choose(f_result, centrals, file_path):
 				top5_values[4] = d
 				top5_labels[4] = count
 		count = count + 1
-	#print top5_labels	
+	print top5_labels	
 	for d in top5_labels:
 		#print l2m_dict[d]
 		top5_mids.append(l2m_dict[d])
 
 	for d in top5_mids:
-		generate_question(f_result, d, file_path)
+		generate_question(f_result, d, file_path, l2v)
 
 
+def get_top5_index(need_sort):
+	top5_labels = [0,0,0,0,0]
+	top5_values = [0.0,0.0,0.0,0.0,0.0]
+	count = 0
+	for d in need_sort:
+		if d > top5_values[4]:
+			if d > top5_values[3]:
+				if d > top5_values[2]:
+					if d > top5_values[1]:
+						if d > top5_values[0]:
+							top5_values[0] = d
+							top5_labels[0] = count
+						else:
+							top5_values[1] = d
+							top5_labels[1] = count
+					else:
+						top5_values[2] = d
+						top5_labels[2] = count
+				else:
+					top5_values[3] = d
+					top5_labels[3] = count
+			else:
+				top5_values[4] = d
+				top5_labels[4] = count
+		count = count + 1
 
-
-###########################################################################
-# pre-process of the data
-
-# make directory including current_nodes, onehop_nodes, analysis of nodes
-separate_dir = "/home/kevinj22/lydia/articles/separate/"
-articles_dir = "/home/kevinj22/lydia/articles/alternativeArticleDB_Unique/"
-graphs_dir = "/home/kevinj22/lydia/articles/lydia_NoLOCorGPE_Weighted/Unfiltered_No_LOC_Top5_FB20_Stemmed_SimCheck_1Hop_NoLeaves/"
-#files = [ f for f in listdir(articles_dir) if isfile(join(articles_dir, f))]
-
-'''
-#move the graph file and original text file to sub directory
-for f in files:
-	os.mkdir(separate_dir + f)
-	shutil.move(articles_dir + f, separate_dir + f + '/' + f)
-	shutil.move(graphs_dir + f + ".gt", separate_dir + f + '/' + f + ".gt")
-
-files = [ f for f in listdir(separate_dir) ]
-articles_path = []
-for i in files:
-	articles_path.append(separate_dir + f + '/' + f)
-
-'''
-# use one of the file to try
-files = [ f for f in listdir(separate_dir) if not isfile(join(separate_dir, f))]
-articles_path = []
-for f in files:
-	articles_path.append(separate_dir + f + '/' + f)
-choice_no = 100
-print files[choice_no]
-tmp_file = files[choice_no]
-file_path = articles_path[choice_no]
-g = gt.load_graph(file_path + ".gt")
-original_edges = g.get_edges()
-extracted_entites = []
-onehop_entites = []
-frequency_dict = {}
-# save the graph
-f = open(file_path + "_graph.txt", 'w+')
-
-f_result = open(file_path + "_results.txt", "w+")
-
-# get the labels of extracted entites and onehop entities
-for e in original_edges:
-	if e[0] not in extracted_entites:
-		extracted_entites.append(e[0])
-		frequency_dict[e[0]] = 1
-	else:
-		frequency_dict[e[0]] = frequency_dict[e[0]] + 1
-	if e[1] not in onehop_entites:
-		onehop_entites.append(e[1])
-		frequency_dict[e[1]] = 1
-	else:
-		frequency_dict[e[1]] = frequency_dict[e[1]] + 1
-	
-
-	f.write(str(e[0]))
-	f.write(" ")
-	f.write(str(e[1]))
-	f.write("\n")
-
-f.close()
-
-# save the frequency of the current and onehop entities
-# the frequency file is not sorted
-# frequency_dict = sorted(frequency_dict.items(), lambda x, y: cmp(x[1], y[1]), reverse=True)
-
-weights = []
-for w in frequency_dict:
-	weights.append(frequency_dict[w])
-max_weight = max(weights)
-for i in range(len(weights)):
-	weights[i] = weights[i] / float(max_weight)
-#print weights
-f = open(file_path + "_tf_weights.txt", "w+")
-
-for w in weights:
-	f.write(str(w))
-	f.write('\n')
-f.close()
-
-
-
-#print "The length of frequency_dict", len(frequency_dict)
-f_1 = open(file_path + "_frequency_current.txt", "w+")
-f_2 = open(file_path + "_frequency_onehop.txt", "w+")
-for ee in frequency_dict:
-	#print ee
-	if ee in extracted_entites:
-		f_1.write(str(ee))
-		f_1.write(' ')
-		f_1.write(str(frequency_dict[ee]))
-		f_1.write('\n')
-	else:
-		f_2.write(str(ee))
-		f_2.write(' ')
-		f_2.write(str(frequency_dict[ee]))
-		f_2.write('\n')
-
-f_1.close()
-f_2.close()
-
-# save all the mids of all, current entities, onehop entities
-l2v = g.graph_properties['lToV']
-#print file_path + "_all_nodes.txt"
-f = open(file_path + "_all_nodes.txt", "w+")
-f_1 = open(file_path + "_current.txt", "w+")
-f_2 = open(file_path + "_onehop.txt", "w+")
-for l in l2v:
-	f.write(str(l))
-	f.write(' ')
-	f.write(str(l2v[l]))
-	f.write("\n")
-	if l2v[l] in extracted_entites:
-		f_1.write(str(l))
-		f_1.write(' ')
-		f_1.write(str(l2v[l]))
-		f_1.write('\n')
-	if l2v[l] in onehop_entites:
-		f_2.write(str(l))
-		f_2.write(' ')
-		f_2.write(str(l2v[l]))
-		f_2.write('\n')
-
-f.close()
-f_1.close()
-f_2.close()
+	return top5_labels
 
 ###########################################################################
 
@@ -377,7 +351,134 @@ f_2.close()
 # calculate the centralities
 # get the mids and labels
 
+
+# get article list
+separate_dir = "/home/kevinj22/lydia/articles/separate/"
+
+files = [ f for f in listdir(separate_dir) if not isfile(join(separate_dir, f))]
+f_article_path = open('/home/kevinj22/lydia/articles/separate/article_path.txt','r')
+tmp_content = f_article_path.read().replace('[','').replace(']','')
+
+articles_path = tmp_content.split(', ')
+for i in range(0, len(articles_path)):
+	articles_path[i] = articles_path[i].replace('\'','')
+f_article_path.close()
+
+choice_no = 110
+file_path = articles_path[choice_no].replace('\"', '').replace('\'','\\\'').replace(',','\,')
+
+
+
+
+f_result = open(file_path + "_results.txt", "w+")
+
+
+
+extracted_entites = []
+onehop_entites = []
+frequency_dict = {}
+
+# file _graph.txt
+g = gt.load_graph(file_path + ".gt")
+original_edges = g.get_edges()
+extracted_entites = []
+onehop_entites = []
+frequency_dict = {}
+
+for e in original_edges:
+	if e[0] not in extracted_entites:
+		extracted_entites.append(e[0])
+		frequency_dict[e[0]] = 1
+		extracted2onehop[e[0]] = []
+		extracted2onehop[e[0]].append(e[1])
+	else:
+		frequency_dict[e[0]] = frequency_dict[e[0]] + 1
+		extracted2onehop[e[0]].append(e[1])
+	if e[1] not in onehop_entites:
+		onehop_entites.append(e[1])
+		frequency_dict[e[1]] = 1
+		onehop2extracted[e[1]] = []
+		onehop2extracted[e[1]].append(e[0])
+	else:
+		frequency_dict[e[1]] = frequency_dict[e[1]] + 1
+		onehop2extracted[e[1]].append(e[0])
+
+# file _all_nodes.txt
+
+# file _current.txt
+f_current = open(file_path + '_current.txt', 'r')
+for line in f_current.readlines():
+	extracted_label2mid[line.split()[1]] = line.split()[0]
+f_current.close()
+
+f_result.write("This is extracted nodes:\n")
+for label in extracted_label2mid:
+	mid = extracted_label2mid[label]
+	f_result.write(mid)
+	f_result.write('\t')
+	mid = "<http://rdf.freebase.com/ns/" + mid + ">"
+	cur.execute("select `min_row_id`, `max_row_id` from `freebase-onlymid_-_fb-id2row-id` where `freebase_id` = '{0}';".format(mid))
+	rows = cur.fetchall()
+	min_row_id = rows[0][0]
+	max_row_id = rows[0][1]
+	cur.execute("select `<object>` from `freebase-onlymid_-_datadump` where `<predicate>`='<http://rdf.freebase.com/ns/type.object.name>' and `row_id` between '{0}' and '{1}';".format(min_row_id, max_row_id))
+	rows = cur.fetchall()
+
+	for d in rows:
+		if "@en" in d[0]:
+			subject_entity = d[0].strip()
+	index = subject_entity.find('@')
+	subject_entity = subject_entity[0:index].replace("\"","")
+	f_result.write(subject_entity)
+	f_result.write('\n')
+
+# file _onehop.txt
+f_onehop = open(file_path + '_onehop.txt', 'r')
+for line in f_onehop.readlines():
+	onehop_label2mid[line.split()[1]] = line.split()[0]
+f_onehop.close()
+
+f_result.write("\n\n\nThis is onehop nodes:\n")
+for label in onehop_label2mid:
+	mid = onehop_label2mid[label]
+	f_result.write(mid)
+	f_result.write('\t')
+	mid = "<http://rdf.freebase.com/ns/" + mid + ">"
+	cur.execute("select `min_row_id`, `max_row_id` from `freebase-onlymid_-_fb-id2row-id` where `freebase_id` = '{0}';".format(mid))
+	rows = cur.fetchall()
+	min_row_id = rows[0][0]
+	max_row_id = rows[0][1]
+	cur.execute("select `<object>` from `freebase-onlymid_-_datadump` where `<predicate>`='<http://rdf.freebase.com/ns/type.object.name>' and `row_id` between '{0}' and '{1}';".format(min_row_id, max_row_id))
+	rows = cur.fetchall()
+
+	for d in rows:
+		if "@en" in d[0]:
+			subject_entity = d[0].strip()
+	index = subject_entity.find('@')
+	subject_entity = subject_entity[0:index].replace("\"","")
+	f_result.write(subject_entity)
+	f_result.write('\n')
+
+# file _tf_weights.txt
+weights = []
+f_frequency = open(file_path + '_tf_weights.txt', 'r')
+for line in f_frequency.readlines():
+	weights.append(float(line))
+f_frequency.close()
+
+
+# file _frequency_current.txt
+
+# file _frequency_onehop.txt
+
+
+
+
+
+
 #file_path = '/home/kevinj22/lydia/articles/separate/0299_3211_The_animal_source_of_the_Ebola_outbreak_in_West_Africa_eludes_scientists/0299_3211_The_animal_source_of_the_Ebola_outbreak_in_West_Africa_eludes_scientists'
+
+
 f_l2m = open(file_path + '_all_nodes.txt','r')
 lines = f_l2m.readlines()
 mids = []
@@ -397,43 +498,110 @@ weights = []
 for line in lines:
 	weights.append(float(line.strip()))
 
+
+
 g = gt.load_graph(file_path + ".gt")
 g.vertex_properties["new_weights"] = g.new_vertex_property("double", vals = weights)
+l2v = g.graph_properties['lToV']
 f_weights.close()
 
-f_result = open(file_path + "_results.txt", "w+")
 
 # pagerank
-f_result.write("\nThis is pagerank:\n")
+#f_result.write("\nThis is pagerank:\n")
 pr = gt.centrality.pagerank(g, prop = g.vertex_properties['new_weights'], ret_iter = True, max_iter = 30000)
-top5_choose(f_result, pr[0], file_path)
+#top5_choose(f_result, pr[0], file_path, l2v)
+
+
+
+# use betweenness, closeness, eigenvector centrality and katz to rank the top5
+
+#ranked5 = get_ranked_top_5()
+
+
+def get_ranked_top_5(betweenness, closeness, eigenvector, katz):
+	scores = {}
+	for i in range(0, len(betweenness)):
+		scores[betweenness[i]] = 0.5 - float(i/10)
+	for i in range(0, len(closeness)):
+		scores[closeness[i]] += 0.5 - float(i/10)
+	for i in range(0, len(eigenvector)):
+		scores[eigenvector[i]] += 0.5 - float(i/10)
+	for i in range(0, len(katz)):
+		scores[katz[i]] += 0.5 - float(i/10)
+
+
+	top5_choose(f_result, scores, file_path, l2v)
+	
+
+
+
+
+
+
 
 
 # betweenness 
-f_result.write("\n\n\n\n\nThis is betweenness:\n")
 bt = gt.centrality.betweenness(g, vprop = g.vertex_properties['new_weights'])
-#print bt
-top5_choose(f_result, bt[0], file_path)
+#top5_choose(f_result, bt[0], file_path, l2v)
+
 
 
 # closeness
-f_result.write("\n\n\n\n\nThis is closeness:\n")
+
 cl = gt.centrality.closeness(g, vprop = g.vertex_properties['new_weights'])
-#print cl
-top5_choose(f_result, cl,file_path)
+#top5_choose(f_result, cl,file_path, l2v)
 
 
 # eigenvector centrality
-f_result.write("\n\n\n\n\nThis is eigenvector centrality:\n")
+
 ev = gt.centrality.eigenvector(g, vprop = g.vertex_properties['new_weights'])
-top5_choose(f_result, ev[1], file_path)
+#top5_choose(f_result, ev[1], file_path, l2v)
 
 
 # katz
-f_result.write("\n\n\n\n\nThis is katz centrality:\n")
 kz = gt.centrality.katz(g, vprop = g.vertex_properties['new_weights'])
-top5_choose(f_result, kz, file_path)
+#top5_choose(f_result, kz, file_path, l2v)
 
+
+
+
+scores = []
+for d in bt[0]:
+	scores.append(0)
+
+top5_l = get_top5_index(bt[0])
+for i in range(0, 5):
+	scores[top5_l[i]] += 0.5 - float(i/10)
+
+top5_l = get_top5_index(cl)
+for i in range(0, 5):
+	scores[top5_l[i]] += 0.5 - float(i/10)
+
+top5_l = get_top5_index(pr)
+for i in range(0, 5):
+	scores[top5_l[i]] += 0.7 * (0.5 - float(i / 10))
+
+top5_l = get_top5_index(ev[1])
+for i in range(0, 5):
+	scores[top5_l[i]] += 0.7 * (0.5 - float(i/10))
+
+top5_l = get_top5_index(kz)
+for i in range(0, 5):
+	scores[top5_l[i]] += 0.3 * (0.5 - float(i/10))
+
+
+# print the original passage
+f_result.write("\n\nThis is the original passage:\n")
+f = open(file_path, "r")
+f_result.write(f.read())
+f_result.write('\n\n\n\n')
+
+
+top5_choose(f_result, scores, file_path, l2v)	
+#get_ranked_top_5(bt[0], cl, ev[1], kz)
+
+
+f.close()
 
 f_result.close()
 '''
@@ -465,4 +633,18 @@ tt = gt.centrality.trust_transitivity(g, bt[1])
 print tt
 top5_choose(tt)
 '''
+'''
+	f_1 = open(file_path + "_current.txt","r")
+	f_2 = open(file_path + "_onehop.txt","r")
 
+	f_result.write("This is extracted nodes:\n")
+	f_result.write(f_1.read())
+	f_result.write("\n")
+
+	f_result.write("This is onehop nodes:\n")
+	f_result.write(f_2.read())
+	f_result.write('\n')
+
+	f_1.close()
+	f_2.close()
+'''

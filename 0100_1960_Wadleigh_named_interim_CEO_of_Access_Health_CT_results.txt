@@ -1,0 +1,162 @@
+This is extracted nodes:
+m.0864rc	Wong Wai Man
+m.0fyyq	United States Department of Health and Human Services
+m.0dq_5	Managing Director
+m.0840w	World Health Organization
+
+
+
+This is onehop nodes:
+m.0vztd25	RJ Tolson
+m.010xgj3f	Massimo Zanini
+m.012vq58j	Vibhor Agarwal
+m.012dxcsw	Matthew Woodward
+m.0hnws	Iron Man
+m.09c7w0	United States of America
+m.02hr9mp	Government Agency
+m.01bqks	Federal government of the United States
+m.011thbbf	Joel Glenn Wright
+m.0bhd848	Apex Thinking
+m.013176br	Antonio Sánchez Garrido
+m.03h64	Hong Kong
+m.025352	Lyricist
+m.032t5c	Brock Chisholm
+
+This is pagerank:
+
+
+
+Subject entity is :Managing Director
+m.0dq_5
+
+
+The fact and sentence from the SimpleQuestion which matches the fact we found:
+www.freebase.com/m/01d3n8	www.freebase.com/book/book_subject/works	www.freebase.com/m/01j44l	What's a book that talks about internal medicine
+The original subject of the sentence:
+Internal medicine
+The generated sentence we got:
+What's a book that talks about Managing Director
+
+
+Subject entity is :Brock Chisholm
+m.032t5c
+
+
+The fact and sentence from the SimpleQuestion which matches the fact we found:
+www.freebase.com/m/0j3yffd	www.freebase.com/people/person/nationality	www.freebase.com/m/0162v	What is terry adamson's nationality?
+The original subject of the sentence:
+Terry Adamson
+The generated sentence we got:
+What is Brock Chisholm's nationality?
+
+
+Subject entity is :Hong Kong
+m.03h64
+
+
+The fact and sentence from the SimpleQuestion which matches the fact we found:
+www.freebase.com/m/01smm	www.freebase.com/travel/travel_destination/tourist_attractions	www.freebase.com/m/0328cp	what's there to see in columbus
+The original subject of the sentence:
+Columbus
+The generated sentence we got:
+what's there to see in Hong Kong
+
+
+Subject entity is :Government Agency
+m.02hr9mp
+
+
+The fact and sentence from the SimpleQuestion which matches the fact we found:
+www.freebase.com/m/05_p2	www.freebase.com/type/object/type	www.freebase.com/m/0gf9qm4	What type of project management is being taught
+The original subject of the sentence:
+Project management
+The generated sentence we got:
+What type of Government Agency is being taught
+
+
+Subject entity is :United States of America
+m.09c7w0
+
+
+The fact and sentence from the SimpleQuestion which matches the fact we found:
+www.freebase.com/m/02dtg	www.freebase.com/location/location/people_born_here	www.freebase.com/m/01s8mcb	who is a musician born in detroit
+The original subject of the sentence:
+Detroit
+The generated sentence we got:
+who is a musician born in United States of America
+
+
+Subject entity is :Managing Director
+m.0dq_5
+
+
+The fact and sentence from the SimpleQuestion which matches the fact we found:
+www.freebase.com/m/01d3n8	www.freebase.com/book/book_subject/works	www.freebase.com/m/01j44l	What's a book that talks about internal medicine
+The original subject of the sentence:
+Internal medicine
+The generated sentence we got:
+What's a book that talks about Managing Director
+
+
+Subject entity is :Lyricist
+m.025352
+
+
+The fact and sentence from the SimpleQuestion which matches the fact we found:
+www.freebase.com/m/01d3n8	www.freebase.com/book/book_subject/works	www.freebase.com/m/01j44l	What's a book that talks about internal medicine
+The original subject of the sentence:
+Internal medicine
+The generated sentence we got:
+What's a book that talks about Lyricist
+
+
+Subject entity is :Hong Kong
+m.03h64
+
+
+The fact and sentence from the SimpleQuestion which matches the fact we found:
+www.freebase.com/m/01smm	www.freebase.com/travel/travel_destination/tourist_attractions	www.freebase.com/m/0328cp	what's there to see in columbus
+The original subject of the sentence:
+Columbus
+The generated sentence we got:
+what's there to see in Hong Kong
+
+
+Subject entity is :World Health Organization
+m.0840w
+
+
+The fact and sentence from the SimpleQuestion which matches the fact we found:
+www.freebase.com/m/01dlzc	www.freebase.com/organization/organization/founders	www.freebase.com/m/03ckbp	who was the founder of adler planetarium?
+The original subject of the sentence:
+Adler Planetarium
+The generated sentence we got:
+who was the founder of World Health Organization?
+
+
+Subject entity is :Brock Chisholm
+m.032t5c
+
+
+The fact and sentence from the SimpleQuestion which matches the fact we found:
+www.freebase.com/m/0j3yffd	www.freebase.com/people/person/nationality	www.freebase.com/m/0162v	What is terry adamson's nationality?
+The original subject of the sentence:
+Terry Adamson
+The generated sentence we got:
+What is Brock Chisholm's nationality?
+
+This is the original passage:
+Wadleigh named interim CEO of Access Health CT
+The Access Health CT Board of Directors unanimously appointed James R. Wadleigh Jr as interim CEO of Connecticut’s insurance exchange.
+
+The news comes just one day after Access Health CT CEO Kevin Counihan announced he was recruited by the U.S. Secretary of Health and Human Services Sylvia Burwell to help run healthcare.gov.
+
+Wadleigh, chief information officer for Access Health CT, was one of three candidates the board considered during their closed-door deliberations Wednesday. The board also considered Access Health CT’s Chief Operations Officer Peter Van Loon and Chief Financial Officer Steven Sigal.
+
+“Over the past two years, Jim has demonstrated great leadership in his role at Access Health, and we know he will continue to work collaboratively with the entire team,” Wyman said. “His strong background and experience will lead the Access Health team through the next open enrollment, as well as provide continuity on the overarching mission to provide residents of Connecticut with quality, affordable healthcare.”
+
+Advertisement
+
+Wadleigh, 47, has been working as chief information officer of the exchange since July 2012. Prior to that he served as senior director of application development of call center technologies at CIGNA.
+
+Read more here.##@@!!

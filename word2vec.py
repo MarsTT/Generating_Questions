@@ -17,9 +17,43 @@ class LabeledLineSentence(object):
 
 def choose_predicate(predDict, file_path):
 	
-
+	'''
 	LabeledSentence = gensim.models.doc2vec.LabeledSentence
 
+
+	list_dir = os.listdir("/home/kevinj22/lydia/articles/financial-news-dataset-master/20061020_20131126_bloomberg_news/")
+	for i in range(1, len(list_dir)):
+		list_dir[i] = "/home/kevinj22/lydia/articles/financial-news-dataset-master/20061020_20131126_bloomberg_news/" + list_dir[i]
+
+	list_article = {}
+	articles_path = []
+	labels = []
+	for i in range(1, len(list_dir)/4):
+		list_article[list_dir[i]] = os.listdir(list_dir[i])
+		for d in list_article[list_dir[i]]:
+			articles_path.append(list_dir[i] + "/" + d)
+			labels.append(d)
+
+	raw_texts = []
+	for i in articles_path:
+		f = open(i, 'r')
+		raw_texts.append(f.read())
+		f.close()
+
+	it = LabeledLineSentence(raw_texts, labels)
+
+	model = gensim.models.Doc2Vec(min_count=1, alpha=0.025, min_alpha=0.025, size=100)
+
+	model.build_vocab(it)
+	total_words = len(model.wv.vocab)
+	for epoch in range(10):
+			model.train(it, total_words = total_words, epochs = 10)
+			model.alpha -= 0.002
+			model.min_alpha = model.alpha
+			model.train(it, total_words = total_words, epochs = 10)
+	model.save('/home/kevinj22/lydia/articles/Sept19_financial_dataset_model.model')
+	'''
+	
 	'''
 	raw_texts = []
 	labels_texts = gutenberg.fileids()
@@ -45,7 +79,7 @@ def choose_predicate(predDict, file_path):
 
 
 	# get the predicate vectors
-	model = gensim.models.Doc2Vec.load('/home/kevinj22/lydia/articles/Aug28_model.model')
+	model = gensim.models.Doc2Vec.load('/home/kevinj22/lydia/articles/Sept19_financial_dataset_model.model')
 	f = open('/home/kevinj22/lydia/SimpleQuestions_v2/annotated_fb_data_train.txt','r')
 	lines = f.readlines()
 	f.close()
@@ -115,7 +149,7 @@ def choose_predicate(predDict, file_path):
 			original_subject.append(origin_entity)
 	#print len(pre2sen)
 	
-	print original_subject
+	#print original_subject
 	
 
 	predicate_vectors = []
@@ -132,8 +166,8 @@ def choose_predicate(predDict, file_path):
 				if splits[j] in model.wv.vocab:
 					if splits[j].lower() != original_subject[pre_no].lower() :
 						tmp_vector += model[splits[j]]
-					else:
-						print splits[j]
+					#else:
+						#print splits[j]
 		else:
 			tmp_vector = 2 * np.random.random(size=100) - 1
 			#print "None of the words in the sentence exits in the vocab"
@@ -177,10 +211,11 @@ def choose_predicate(predDict, file_path):
 		#else:
 			#print "Bigger than min"
 		count += 1
-
+	'''
 	print "We are Here"
 	print predicate_no
 	print predicate_sentence[predicate_no]
+	'''
 	#print predicates[predicate_no]
 	for p in pre2sen:
 		if predicate_sentence[predicate_no] in pre2sen[p]:
